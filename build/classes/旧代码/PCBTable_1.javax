@@ -1,0 +1,115 @@
+package computer.os.kernel.process_management;
+
+import computer.os.base.OS;
+import GUI.desktop.window.process_manager.ProcessInformation;
+
+/**
+ * 进程控制块表
+ * @author Administrator
+ */
+public class PCBTable
+{
+
+    public final static int PCB_TABEL_SIZE = 20;
+    public final static int PCB_TABEL_MEMORY_SIZE = PCB_TABEL_SIZE * PCB.PCB_SIZE;
+    private PCB[] pcbs;
+    private PCB emptyHead;
+    private PCB runHead;
+    private PCB readyHead;
+    private PCB waitHead;
+    private OS os;
+
+    public PCBTable(OS os)
+    {
+        this.os = os;
+        this.pcbs = new PCB[PCB_TABEL_SIZE];
+        for (int i = 0; i < pcbs.length; i++)
+        {
+            pcbs[i] = new PCB(os, i);
+        }
+    }
+
+    public void init()
+    {
+        for (int i = 0; i < pcbs.length; i++)
+        {
+            pcbs[i].init();
+        }
+        emptyHead = pcbs[0];
+        runHead = pcbs[1];
+        waitHead = pcbs[2];
+        readyHead = pcbs[3];
+        runHead.setNextPCBIndex(readyHead.getIndex());
+        readyHead.setPrePCBIndex(readyHead.getIndex());
+        readyHead.setNextPCBIndex(readyHead.getIndex());
+        waitHead.setPrePCBIndex(waitHead.getIndex());
+        waitHead.setNextPCBIndex(waitHead.getIndex());
+        emptyHead.setNextPCBIndex(4);
+        for (int i = 4; i < pcbs.length - 1; i++)
+        {
+            pcbs[i].setNextPCBIndex(i + 1);
+        }
+        pcbs[pcbs.length - 1].setNextPCBIndex(0);
+    }
+
+    public PCB getRunHead()
+    {
+        return runHead;
+    }
+
+    public PCB getReadyHead()
+    {
+        return readyHead;
+    }
+
+    public PCB getWaitHead()
+    {
+        return waitHead;
+    }
+
+    public PCB getEmptyHead()
+    {
+        return emptyHead;
+    }
+
+    public PCB getPCB(int index)
+    {
+        if (0 <= index && index < pcbs.length)
+        {
+            return pcbs[index];
+        }
+        return null;
+    }
+    
+    public void sendInformation()
+    {
+        int i;
+        PCB pcb;
+        ProcessInformation processInformation=os.cpu.processInformation;
+        if (processInformation != null)
+        {
+            processInformation.init();
+            pcb = getPCB(getRunHead().getNextPCBIndex());
+            if (pcb != null)
+            {
+                processInformation.add(pcb.getIndex(), pcb.getName(), pcb.getStatus(), pcb.getMCBIndex(), pcb.getPSW(), pcb.getPC());
+            }
+            pcb = getReadyHead();
+            while (pcb != null)
+            {
+                pcb = getPCB(pcb.getNextPCBIndex());
+                processInformation.add(pcb.getIndex(), pcb.getName(), pcb.getStatus(), pcb.getMCBIndex(), pcb.getPSW(), pcb.getPC());
+                if (pcb == readyHead)
+                {
+                    break;
+                }
+            }
+            pcb = getPCB(getWaitHead().getNextPCBIndex());
+            while (pcb != null && pcb != waitHead)
+            {
+                pcb = getPCB(pcb.getNextPCBIndex());
+                processInformation.add(pcb.getIndex(), pcb.getName(), pcb.getStatus(), pcb.getMCBIndex(), pcb.getPSW(), pcb.getPC());
+            }
+        }
+    }
+}

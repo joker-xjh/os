@@ -1,0 +1,134 @@
+package computer.os.kernel.process_management;
+
+import computer.os.base.OS;
+
+/**
+ * 进程控制快管理器
+ * @author Administrator
+ */
+public class PCBManager
+{
+
+    private PCBTable pcbTable;
+
+    public PCBManager(OS os)
+    {
+        this.pcbTable = new PCBTable(os);
+    }
+
+    public void init()
+    {
+        this.pcbTable.init();
+    }
+
+    public PCB getPCB(int index)
+    {
+        return pcbTable.getPCB(index);
+    }
+
+    public PCB getRunPCB()
+    {
+        int index = pcbTable.getRunHead().getNextPCBIndex();
+        if (index != 0)
+        {
+            return getPCB(index);
+        } else
+        {
+            return null;
+        }
+    }
+
+    public PCB getEmptyPCB()
+    {
+        PCB mPCB = null;
+        int index = pcbTable.getEmptyHead().getNextPCBIndex();
+        if (index != 0)
+        {
+            mPCB = getPCB(index);
+            if (mPCB != null)
+            {
+                pcbTable.getEmptyHead().setNextPCBIndex(mPCB.getNextPCBIndex());
+            }
+        }
+        return mPCB;
+    }
+
+    public PCB getFirstReadyPCB()
+    {
+        PCB pcbl, pcbr, pcb = null;
+        int index = pcbTable.getReadyHead().getNextPCBIndex();
+        if (index != 0)
+        {
+            pcb = pcbTable.getPCB(index);
+            pcbl = getPCB(pcb.getPrePCBIndex());
+            pcbr = getPCB(pcb.getNextPCBIndex());
+            pcbl.setNextPCBIndex(pcbr.getIndex());
+            pcbr.setPrePCBIndex(pcbl.getIndex());
+        }
+        return pcb;
+    }
+
+    public void setRunPCB(int index)
+    {
+        this.pcbTable.getRunHead().setNextPCBIndex(index);
+    }
+
+    public void addEmptyPCB(PCB pcb)
+    {
+        if (pcb != null)
+        {
+            pcb.setNextPCBIndex(pcbTable.getEmptyHead().getNextPCBIndex());
+            pcbTable.getEmptyHead().setNextPCBIndex(pcb.getIndex());
+            pcb.setStatus(PCB.STATUS_END);
+        }
+    }
+
+    public void addLastReadyPCB(PCB pcb)
+    {
+        PCB pcbl, pcbr;
+        if (pcb != null)
+        {
+            pcbr = pcbTable.getReadyHead();
+            pcbl = getPCB(pcbr.getPrePCBIndex());
+            pcbl.setNextPCBIndex(pcb.getIndex());
+            pcbr.setPrePCBIndex(pcb.getIndex());
+            pcb.setPrePCBIndex(pcbl.getIndex());
+            pcb.setNextPCBIndex(pcbr.getIndex());
+            pcb.setStatus(PCB.STATUS_READY);
+        }
+    }
+
+    public void addWaitPCB(PCB pcb)
+    {
+        PCB pcbl, pcbr;
+        if (pcb != null)
+        {
+            pcbr = pcbTable.getWaitHead();
+            pcbl = getPCB(pcbr.getPrePCBIndex());
+            pcbl.setNextPCBIndex(pcb.getIndex());
+            pcbr.setPrePCBIndex(pcb.getIndex());
+            pcb.setPrePCBIndex(pcbl.getIndex());
+            pcb.setNextPCBIndex(pcbr.getIndex());
+            int index = pcbTable.getReadyHead().getNextPCBIndex();
+            if (index != 0)
+            {
+                pcb = pcbTable.getPCB(index);
+                pcbl = getPCB(pcb.getPrePCBIndex());
+                pcbr = getPCB(pcb.getNextPCBIndex());
+                pcbl.setNextPCBIndex(pcbr.getIndex());
+                pcbr.setPrePCBIndex(pcbl.getIndex());
+            }
+            pcb.setStatus(PCB.STATUS_WAIT);
+        }
+    }
+
+    public PCB getFreePCB()
+    {
+        return this.pcbTable.getReadyHead();
+    }
+
+    public void sendInformation()
+    {
+        this.pcbTable.sendInformation();
+    }
+}

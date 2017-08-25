@@ -1,0 +1,171 @@
+package computer.os.kernel.process_management;
+
+import computer.os.base.OS;
+import computer.os.base.ReadAndWrite;
+
+
+/**
+ * 进程控制块
+ * @author Administrator
+ */
+public class PCB extends ReadAndWrite
+{
+
+    public final static int PCB_SIZE = 16;
+    public final static int STATUS_END = 0;
+    public final static int STATUS_RUN = 1;
+    public final static int STATUS_READY = 2;
+    public final static int STATUS_WAIT = 3;
+    private int index;
+
+    public PCB(OS os, int index)
+    {
+        super(os);
+        this.index = index;
+    }
+
+    public void init()
+    {
+        init(0, 0, -1, STATUS_END, 0, 0, 0, 0, 0, 0);
+    }
+
+    public void init(int pre, int next, int name, int status, int psw, int pc, int ax, int bx, int cx, int dx)
+    {
+        setPrePCBIndex(pre);
+        setNextPCBIndex(next);
+        setName(name);
+        setStatus(status);
+        setPSW(psw);
+        setPC(pc);
+        setAX(ax);
+        setBX(bx);
+        setCX(cx);
+        setDX(dx);
+    }
+
+    public void set(int status,int psw,int pc,int ax,int bx,int cx,int dx)
+    {
+        setStatus(status);
+        setPSW(psw);
+        setPC(pc);
+        setAX(ax);
+        setBX(bx);
+        setCX(cx);
+        setDX(dx);
+    }
+    
+    public int getIndex()
+    {
+        return index;
+    }
+
+    public int getPrePCBIndex()
+    {
+        return 0x000000ff & read(index * PCB_SIZE);
+    }
+
+    public int getNextPCBIndex()
+    {
+        return 0x000000ff & read(index * PCB_SIZE + 1);
+    }
+
+    public int getName()
+    {
+        return 0x000000ff & read(index * PCB_SIZE + 2);
+    }
+
+    public int getStatus()
+    {
+        return 0x000000ff & read(index * PCB_SIZE + 3);
+    }
+
+    public int getMCBIndex()
+    {
+        return 0x000000ff & read(index * PCB_SIZE + 4);
+    }
+
+    public int getPSW()
+    {
+        return 0x000000ff & read(index * PCB_SIZE + 5);
+    }
+
+    public int getPC()
+    {
+        return read2Byte(index * PCB_SIZE + 6);
+    }
+
+    public int getAX()
+    {
+        return read2Byte(index * PCB_SIZE + 8);
+    }
+
+    public int getBX()
+    {
+        return read2Byte(index * PCB_SIZE + 10);
+    }
+
+    public int getCX()
+    {
+        return read2Byte(index * PCB_SIZE + 12);
+    }
+
+    public int getDX()
+    {
+        return read2Byte(index * PCB_SIZE + 14);
+    }
+
+    public void setPrePCBIndex(int preIndex)
+    {
+        write(index * PCB_SIZE, (byte) (0x000000ff & preIndex));
+    }
+
+    public void setNextPCBIndex(int nextIndex)
+    {
+        write(index * PCB_SIZE + 1, (byte) (0x000000ff & nextIndex));
+    }
+
+    public void setName(int name)
+    {
+        write(index * PCB_SIZE + 2, (byte) (0x000000ff & name));
+    }
+
+    public void setStatus(int status)
+    {
+        write(index * PCB_SIZE + 3, (byte) (0x000000ff & status));
+    }
+
+    public void setMCBIndex(int mcbIndex)
+    {
+        write(index * PCB_SIZE + 4, (byte) (0x000000ff & mcbIndex));
+    }
+
+    public void setPSW(int psw)
+    {
+        write(index * PCB_SIZE + 5, (byte) (0x000000ff & psw));
+    }
+
+    public void setPC(int pc)
+    {
+        write2Byte(index * PCB_SIZE + 6, (0x000000ff & pc));
+    }
+
+    public void setAX(int ax)
+    {
+        write2Byte(index * PCB_SIZE + 8, (0x000000ff & ax));
+    }
+
+    public void setBX(int bx)
+    {
+        write2Byte(index * PCB_SIZE + 10, (0x000000ff & bx));
+    }
+
+    public void setCX(int cx)
+    {
+        write2Byte(index * PCB_SIZE + 12, (0x000000ff & cx));
+    }
+
+    public void setDX(int dx)
+    {
+        write2Byte(index * PCB_SIZE + 14, (0x000000ff & dx));
+    }
+}

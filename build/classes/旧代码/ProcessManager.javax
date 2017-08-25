@@ -1,0 +1,291 @@
+package computer.os.kernel.process_management;
+
+import computer.os.base.OS;
+import computer.os.kernel.file_management.OpenFileItem;
+
+/**
+ *
+ * @author Administrator
+ */
+public class ProcessManager extends computer.os.base.SystemProcess
+{
+
+    public final static int SIZE = PCBTable.PCB_TABEL_MEMORY_SIZE;
+    private int index;
+    private PCBManager pcbManager;
+    private byte[] program;
+
+    public ProcessManager(OS os)
+    {
+        super(os);
+        pcbManager = new PCBManager(os);
+        program = new byte[1 << 11];
+    }
+
+    @Override
+    protected void push()
+    {
+        super.push();
+        os.cpu.RR = os.memoryManager.getStartAddress(index);
+        os.cpu.LR = os.memoryManager.getLength(index);
+    }
+
+    public void init()
+    {
+        PCB pcb;
+        int rr, lr, indx;
+        push();
+        this.pcbManager.init();
+        indx = os.memoryManager.allocate(3);
+        pcb = this.pcbManager.getFreePCB();
+        pcb.setMCBIndex(indx);
+        pcb.setName(0);
+        pcb.setStatus(PCB.STATUS_READY);
+        pcb.setPC(0);
+        pcb.setPSW(0);
+        this.pcbManager.setRunPCB(pcb.getIndex());
+        rr = os.memoryManager.getStartAddress(indx);
+        lr = os.memoryManager.getLength(indx);
+        os.cpu.RR = rr;
+        os.cpu.LR = lr;
+        this.write(0, (byte) 'j');
+        this.write(1, (byte) 0);
+        this.write(2, (byte) 0);
+        pop();
+        push();
+        this.pcbManager.sendInformation();
+        indx = os.memoryManager.allocate(12);
+        pcb = this.pcbManager.getEmptyPCB();
+        pcb.setMCBIndex(indx);
+        pcb.setName(123);
+        pcb.setPC(0);
+        pcb.setPSW(0);
+        pcb.setStatus(PCB.STATUS_READY);
+        this.pcbManager.addLastReadyPCB(pcb);
+        rr = os.memoryManager.getStartAddress(indx);
+        lr = os.memoryManager.getLength(indx);
+        os.cpu.RR = rr;
+        os.cpu.LR = lr;
+        this.write(0, (byte) 'x');
+        this.write(1, (byte) '+');
+        this.write(2, (byte) '+');
+        this.write(3, (byte) 'x');
+        this.write(4, (byte) '+');
+        this.write(5, (byte) '+');
+        this.write(6, (byte) 'j');
+        this.write(7, (byte) 0);
+        this.write(8, (byte) 0);
+        pop();
+        push();
+        this.pcbManager.sendInformation();
+        indx = os.memoryManager.allocate(20);
+        pcb = this.pcbManager.getEmptyPCB();
+        pcb.setMCBIndex(indx);
+        pcb.setName(32);
+        pcb.setStatus(PCB.STATUS_READY);
+        pcb.setPC(0);
+        pcb.setPSW(0);
+        this.pcbManager.addLastReadyPCB(pcb);
+        rr = os.memoryManager.getStartAddress(indx);
+        lr = os.memoryManager.getLength(indx);
+        os.cpu.RR = rr;
+        os.cpu.LR = lr;
+        this.write(0, (byte) 'x');
+        this.write(1, (byte) '=');
+        this.write(2, (byte) '8');
+        this.write(3, (byte) 'x');
+        this.write(4, (byte) '+');
+        this.write(5, (byte) '+');
+        this.write(6, (byte) 'j');
+        this.write(7, (byte) 0);
+        this.write(8, (byte) 0);
+        pop();
+        push();
+        this.pcbManager.sendInformation();
+        indx = os.memoryManager.allocate(20);
+        pcb = this.pcbManager.getEmptyPCB();
+        pcb.setMCBIndex(indx);
+        pcb.setName(11);
+        pcb.setStatus(PCB.STATUS_READY);
+        pcb.setPC(0);
+        pcb.setPSW(0);
+        this.pcbManager.addLastReadyPCB(pcb);
+        rr = os.memoryManager.getStartAddress(indx);
+        lr = os.memoryManager.getLength(indx);
+        os.cpu.RR = rr;
+        os.cpu.LR = lr;
+        this.write(0, (byte) 'x');
+        this.write(1, (byte) '=');
+        this.write(2, (byte) '8');
+        this.write(3, (byte) 'x');
+        this.write(4, (byte) '+');
+        this.write(5, (byte) '+');
+        this.write(6, (byte) 'x');
+        this.write(7, (byte) '-');
+        this.write(8, (byte) '-');
+        this.write(9, (byte) 'x');
+        this.write(10, (byte) '+');
+        this.write(11, (byte) '+');
+        this.write(12, (byte) 'e');
+        this.write(13, (byte) 'n');
+        this.write(14, (byte) 'd');
+        pop();
+        push();
+        this.pcbManager.sendInformation();
+        pop();
+    }
+
+    public void create(byte[][] fileNameOfProgram)
+    {
+        PCB pcb;
+        int length, mcbIndex, rr, lr;
+        push();
+        if (os.fileManager.canExecute(fileNameOfProgram))
+        {
+            os.fileManager.open(fileNameOfProgram, (byte) OpenFileItem.OPEN_TYPE_READ);
+            length = os.fileManager.read(fileNameOfProgram, program, program.length);
+            if (length >= 0)
+            {
+                pcb = this.pcbManager.getEmptyPCB();
+                if (pcb != null)
+                {
+                    mcbIndex = os.memoryManager.allocate(length + 2);
+                    if (mcbIndex > 0)
+                    {
+                        pop();
+                        rr = os.cpu.RR;
+                        lr = os.cpu.LR;
+                        os.cpu.RR = os.memoryManager.getStartAddress(index);
+                        os.cpu.LR = os.memoryManager.getLength(index);
+                        for (int j = 0; j < length; j++)
+                        {
+                            write(j, program[j]);
+                        }
+                        os.cpu.RR = rr;
+                        os.cpu.LR = lr;
+                        push();
+                        pcb.setMCBIndex(mcbIndex);
+                        pcb.setPSW(os.cpu.PSW_IF_BIT);
+                        pcb.setAX(0);
+                        pcb.setPC(0);
+                        pcb.setStatus(PCB.STATUS_READY);
+                        this.pcbManager.addLastReadyPCB(pcb);
+                    } else
+                    {
+                        this.pcbManager.addEmptyPCB(pcb);
+                    }
+                }
+            }
+        }
+        this.pcbManager.sendInformation();
+        this.os.displayManager.showProcess();
+        pop();
+    }
+
+    public void destroy()
+    {
+        int pre, next;
+        push();
+        PCB pcb = pcbManager.getRunPCB();
+        if (pcb != null)
+        {
+            os.memoryManager.collect(pcb.getMCBIndex());
+            pcbManager.addEmptyPCB(pcb);
+        }
+        this.pcbManager.sendInformation();
+        this.os.displayManager.showProcess();
+        pop();
+        load();
+    }
+
+    public void block()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public void awake(int index)
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public void schedule()
+    {
+        PCB run, ready;
+        save();
+        load();
+    }
+
+    public void load()
+    {
+        PCB run;
+        int rr, lr, pc, psw, ax, bx, cx, dx;
+        push();
+        this.pcbManager.sendInformation();
+        this.os.displayManager.showProcess();
+        run = this.pcbManager.getFirstReadyPCB();
+        psw = run.getPSW();
+        pc = run.getPC();
+        ax = run.getAX();
+        bx = run.getBX();
+        cx = run.getCX();
+        dx = run.getDX();
+        rr = os.memoryManager.getStartAddress(run.getMCBIndex());
+        lr = os.memoryManager.getLength(run.getMCBIndex());
+        run.setStatus(PCB.STATUS_RUN);
+        pcbManager.setRunPCB(run.getIndex());
+        this.pcbManager.sendInformation();
+        this.os.displayManager.showProcess();
+        pop();
+        os.cpu.PSW = psw;
+        os.cpu.RR = rr;
+        os.cpu.LR = lr;
+        os.cpu.PC = pc;
+        os.cpu.AX = ax;
+        os.cpu.BX = bx;
+        os.cpu.CX = cx;
+        os.cpu.DX = dx;
+    }
+
+    public void save()
+    {
+        PCB run;
+        int rr, lr, pc, psw, ax, bx, cx, dx;
+        psw = os.cpu.PSW;
+        pc = os.cpu.PC;
+        ax = os.cpu.AX;
+        bx = os.cpu.BX;
+        cx = os.cpu.CX;
+        dx = os.cpu.DX;
+        push();
+        this.pcbManager.sendInformation();
+        this.os.displayManager.showProcess();
+        run = this.pcbManager.getRunPCB();
+        if (run != null)
+        {
+            run.setPSW(psw);
+            run.setPC(pc);
+            run.setAX(ax);
+            run.setBX(bx);
+            run.setCX(cx);
+            run.setDX(dx);
+            run.setStatus(PCB.STATUS_READY);
+            pcbManager.addLastReadyPCB(run);
+            pcbManager.setRunPCB(-1);
+        }
+        this.pcbManager.sendInformation();
+        this.os.displayManager.showProcess();
+        pop();
+    }
+
+    public void setMCBIndex(int index)
+    {
+        this.index = index;
+    }
+
+    public void sendInformation()
+    {
+        push();
+        this.pcbManager.sendInformation();
+        pop();
+    }
+}
